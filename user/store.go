@@ -37,7 +37,7 @@ func (r userRow) toSDK() User {
 	}
 }
 
-func (s *UserStore) GetUserProfile(ctx context.Context, userID string) (User, error) {
+func (s *UserStore) GetProfile(ctx context.Context, userID string) (User, error) {
 	const query = `SELECT id, email, username, roles FROM users WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, userID)
@@ -51,6 +51,25 @@ func (s *UserStore) GetUserProfile(ctx context.Context, userID string) (User, er
 			return User{}, fmt.Errorf("user %s: %w", userID, ErrNotFound)
 		}
 		return User{}, fmt.Errorf("scanning user profile %s: %w", userID, err)
+	}
+
+	return row.toSDK(), nil
+}
+
+func (s *UserStore) GetByEmail(ctx context.Context, email string) (User, error) {
+	const query = `SELECT id, email, username, roles FROM users WHERE email = $1`
+
+	rows, err := s.pool.Query(ctx, query, email)
+	if err != nil {
+		return User{}, fmt.Errorf("querying user by email %s: %w", email, err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, fmt.Errorf("user %s: %w", email, ErrNotFound)
+		}
+		return User{}, fmt.Errorf("scanning user profile %s: %w", email, err)
 	}
 
 	return row.toSDK(), nil
