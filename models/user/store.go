@@ -48,7 +48,7 @@ func (s *UserStore) GetUserProfile(ctx context.Context, userID string) (User, er
 	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return User{}, ErrNotFound
+			return User{}, fmt.Errorf("user %s: %w", userID, ErrNotFound)
 		}
 		return User{}, fmt.Errorf("scanning user profile %s: %w", userID, err)
 	}
