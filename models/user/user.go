@@ -14,7 +14,8 @@ const (
 )
 
 type User struct {
-	ID    string
-	Email string
-	Roles []Role
+	ID       string
+	Email    string
+	Username string
+	Roles    []Role
 }
