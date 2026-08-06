@@ -1,4 +1,4 @@
-module github.com/touchmeangel/rox_sdk_go
+module github.com/touchmeangel/rox_models_go
 
 go 1.26.4
 
