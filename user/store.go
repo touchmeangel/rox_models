@@ -74,3 +74,22 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (User, error) 
 
 	return row.toSDK(), nil
 }
+
+func (s *UserStore) GetByUsername(ctx context.Context, username string) (User, error) {
+	const query = `SELECT id, email, username, roles FROM users WHERE username = $1`
+
+	rows, err := s.pool.Query(ctx, query, username)
+	if err != nil {
+		return User{}, fmt.Errorf("querying user by username %s: %w", username, err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, fmt.Errorf("user %s: %w", username, ErrNotFound)
+		}
+		return User{}, fmt.Errorf("scanning user profile %s: %w", username, err)
+	}
+
+	return row.toSDK(), nil
+}
