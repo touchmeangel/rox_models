@@ -17,26 +17,6 @@ func NewUserStore(pool *pgxpool.Pool) *UserStore {
 	return &UserStore{pool: pool}
 }
 
-type userRow struct {
-	ID       string   `db:"id"`
-	Email    string   `db:"email"`
-	Username string   `db:"username"`
-	Roles    []string `db:"roles"`
-}
-
-func (r userRow) toSDK() User {
-	roles := make([]Role, len(r.Roles))
-	for i, ro := range r.Roles {
-		roles[i] = Role(ro)
-	}
-	return User{
-		ID:       r.ID,
-		Email:    r.Email,
-		Username: r.Username,
-		Roles:    roles,
-	}
-}
-
 func (s *UserStore) GetProfile(ctx context.Context, userID string) (User, error) {
 	const query = `SELECT id, email, username, roles FROM users WHERE id = $1`
 
@@ -89,6 +69,25 @@ func (s *UserStore) GetByUsername(ctx context.Context, username string) (User, e
 			return User{}, fmt.Errorf("user %s: %w", username, ErrNotFound)
 		}
 		return User{}, fmt.Errorf("scanning user profile %s: %w", username, err)
+	}
+
+	return row.toSDK(), nil
+}
+
+func (s *UserStore) GetCredentialsByEmail(ctx context.Context, email string) (Credentials, error) {
+	const query = `SELECT id, email, username, roles, password_hash FROM users WHERE email = $1`
+
+	rows, err := s.pool.Query(ctx, query, email)
+	if err != nil {
+		return Credentials{}, fmt.Errorf("querying credentials by email %s: %w", email, err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[credentialsRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Credentials{}, fmt.Errorf("user %s: %w", email, ErrNotFound)
+		}
+		return Credentials{}, fmt.Errorf("scanning credentials %s: %w", email, err)
 	}
 
 	return row.toSDK(), nil

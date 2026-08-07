@@ -19,3 +19,23 @@ type User struct {
 	Username string
 	Roles    []Role
 }
+
+type userRow struct {
+	ID       string   `db:"id"`
+	Email    string   `db:"email"`
+	Username string   `db:"username"`
+	Roles    []string `db:"roles"`
+}
+
+func (r userRow) toSDK() User {
+	roles := make([]Role, len(r.Roles))
+	for i, ro := range r.Roles {
+		roles[i] = Role(ro)
+	}
+	return User{
+		ID:       r.ID,
+		Email:    r.Email,
+		Username: r.Username,
+		Roles:    roles,
+	}
+}
