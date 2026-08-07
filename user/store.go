@@ -6,8 +6,16 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/touchmeangel/rox_models_go/idgen"
 	"github.com/touchmeangel/rox_models_go/signup"
+)
+
+const (
+	maxIDAttempts     = 3
+	pgUniqueViolation = "23505"
 )
 
 type UserStore struct {
@@ -117,8 +125,9 @@ func (s *UserStore) SignupStatus(ctx context.Context) (signup.SignupMode, error)
 }
 
 var (
-	ErrSignupClosed = errors.New("signup is currently closed")
-	ErrEmailTaken   = errors.New("email is already registered")
+	ErrSignupClosed  = errors.New("signup is currently closed")
+	ErrEmailTaken    = errors.New("email is already registered")
+	ErrUsernameTaken = errors.New("username is already registered")
 )
 
 func (s *UserStore) Register(ctx context.Context, email, username, passwordHash string) (User, error) {
@@ -152,18 +161,42 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	}
 
 	const insertQuery = `
-		INSERT INTO users (email, username, password_hash, roles)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO users (id, email, username, password_hash, roles)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, email, username, roles
 	`
-	rows, err := tx.Query(ctx, insertQuery, email, username, passwordHash, []string{string(role)})
-	if err != nil {
-		return User{}, fmt.Errorf("register: insert user: %w", err)
-	}
 
-	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
-	if err != nil {
-		return User{}, fmt.Errorf("register: scan inserted user: %w", err)
+	var row userRow
+	for attempt := 1; ; attempt++ {
+		id, err := idgen.New("usr")
+		if err != nil {
+			return User{}, fmt.Errorf("register: generate id: %w", err)
+		}
+
+		rows, err := tx.Query(ctx, insertQuery, id, email, username, passwordHash, []string{string(role)})
+		if err == nil {
+			row, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
+			if err != nil {
+				return User{}, fmt.Errorf("register: scan inserted user: %w", err)
+			}
+			break
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
+			switch pgErr.ConstraintName {
+			case "users_email_key":
+				return User{}, ErrEmailTaken
+			case "users_username_key":
+				return User{}, ErrUsernameTaken
+			case "users_pkey":
+				if attempt < maxIDAttempts {
+					continue
+				}
+				return User{}, fmt.Errorf("register: id generator collided %d times in a row (check entropy source): %w", attempt, err)
+			}
+		}
+		return User{}, fmt.Errorf("register: insert user: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
