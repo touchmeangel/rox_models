@@ -14,17 +14,19 @@ const (
 )
 
 type User struct {
-	ID       string
-	Email    string
-	Username string
-	Roles    []Role
+	ID            string
+	Email         string
+	EmailVerified bool
+	Username      string
+	Roles         []Role
 }
 
 type userRow struct {
-	ID       string   `db:"id"`
-	Email    string   `db:"email"`
-	Username string   `db:"username"`
-	Roles    []string `db:"roles"`
+	ID            string   `db:"id"`
+	Email         string   `db:"email"`
+	EmailVerified bool     `db:"email_verified"`
+	Username      string   `db:"username"`
+	Roles         []string `db:"roles"`
 }
 
 func (r userRow) toSDK() User {
@@ -33,9 +35,10 @@ func (r userRow) toSDK() User {
 		roles[i] = Role(ro)
 	}
 	return User{
-		ID:       r.ID,
-		Email:    r.Email,
-		Username: r.Username,
-		Roles:    roles,
+		ID:            r.ID,
+		Email:         r.Email,
+		EmailVerified: r.EmailVerified,
+		Username:      r.Username,
+		Roles:         roles,
 	}
 }
