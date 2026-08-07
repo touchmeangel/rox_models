@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/touchmeangel/rox_models_go/signup"
 )
 
 type UserStore struct {
@@ -88,6 +89,85 @@ func (s *UserStore) GetCredentialsByEmail(ctx context.Context, email string) (Cr
 			return Credentials{}, fmt.Errorf("user %s: %w", email, ErrNotFound)
 		}
 		return Credentials{}, fmt.Errorf("scanning credentials %s: %w", email, err)
+	}
+
+	return row.toSDK(), nil
+}
+
+func (s *UserStore) SignupStatus(ctx context.Context) (signup.SignupMode, error) {
+	const query = `SELECT admin_claimed, open_signup_enabled FROM system_settings`
+
+	var adminClaimed, openSignup bool
+	err := s.pool.QueryRow(ctx, query).Scan(&adminClaimed, &openSignup)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("signup status: system_settings row missing — check migrations ran")
+		}
+		return "", fmt.Errorf("signup status: %w", err)
+	}
+
+	switch {
+	case !adminClaimed:
+		return signup.SignupModeBootstrap, nil
+	case openSignup:
+		return signup.SignupModeOpen, nil
+	default:
+		return signup.SignupModeInviteOnly, nil
+	}
+}
+
+var (
+	ErrSignupClosed = errors.New("signup is currently closed")
+	ErrEmailTaken   = errors.New("email is already registered")
+)
+
+func (s *UserStore) Register(ctx context.Context, email, username, passwordHash string) (User, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return User{}, fmt.Errorf("register: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	tag, err := tx.Exec(ctx, `UPDATE system_settings SET admin_claimed = true WHERE admin_claimed = false`)
+	if err != nil {
+		return User{}, fmt.Errorf("register: claim admin slot: %w", err)
+	}
+	becameAdmin := tag.RowsAffected() == 1
+
+	role := RoleUser
+	if becameAdmin {
+		role = RoleAdmin
+	} else {
+		var openSignup bool
+		err := tx.QueryRow(ctx, `SELECT open_signup_enabled FROM system_settings`).Scan(&openSignup)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, fmt.Errorf("register: system_settings row missing — check migrations ran")
+		}
+		if err != nil {
+			return User{}, fmt.Errorf("register: check signup mode: %w", err)
+		}
+		if !openSignup {
+			return User{}, ErrSignupClosed
+		}
+	}
+
+	const insertQuery = `
+		INSERT INTO users (email, username, password_hash, roles)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, email, username, roles
+	`
+	rows, err := tx.Query(ctx, insertQuery, email, username, passwordHash, []string{string(role)})
+	if err != nil {
+		return User{}, fmt.Errorf("register: insert user: %w", err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
+	if err != nil {
+		return User{}, fmt.Errorf("register: scan inserted user: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return User{}, fmt.Errorf("register: commit: %w", err)
 	}
 
 	return row.toSDK(), nil
