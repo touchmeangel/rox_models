@@ -130,7 +130,7 @@ var (
 	ErrUsernameTaken = errors.New("username is already registered")
 )
 
-func (s *UserStore) Register(ctx context.Context, email, username, passwordHash string) (User, error) {
+func (s *UserStore) Register(ctx context.Context, email, username, passwordHash string, quotaGiB int) (User, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return User{}, fmt.Errorf("register: begin tx: %w", err)
@@ -161,8 +161,8 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	}
 
 	const insertQuery = `
-		INSERT INTO users (id, email, email_verified, username, password_hash, roles)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO users (id, email, email_verified, username, password_hash, roles, quota_gib)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, email, username, roles
 	`
 
@@ -173,7 +173,7 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 			return User{}, fmt.Errorf("register: generate id: %w", err)
 		}
 
-		rows, err := tx.Query(ctx, insertQuery, id, email, false, username, passwordHash, []string{string(role)})
+		rows, err := tx.Query(ctx, insertQuery, id, email, false, username, passwordHash, []string{string(role)}, quotaGiB)
 		if err == nil {
 			row, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
 			if err != nil {
