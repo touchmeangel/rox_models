@@ -19,7 +19,8 @@ type User struct {
 	EmailVerified bool
 	Username      string
 	Roles         []Role
-	QuotaGiB      int
+	QuotaBytes    int64
+	UsedBytes     int64
 }
 
 type userRow struct {
@@ -28,7 +29,8 @@ type userRow struct {
 	EmailVerified bool     `db:"email_verified"`
 	Username      string   `db:"username"`
 	Roles         []string `db:"roles"`
-	QuotaGiB      int      `db:"quota_gib"`
+	QuotaBytes    int64    `db:"quota_bytes"`
+	UsedBytes     int64    `db:"used_bytes"`
 }
 
 func (r userRow) toSDK() User {
@@ -42,6 +44,7 @@ func (r userRow) toSDK() User {
 		EmailVerified: r.EmailVerified,
 		Username:      r.Username,
 		Roles:         roles,
-		QuotaGiB:      r.QuotaGiB,
+		QuotaBytes:    r.QuotaBytes,
+		UsedBytes:     r.UsedBytes,
 	}
 }

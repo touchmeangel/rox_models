@@ -206,6 +206,27 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	return row.toSDK(), nil
 }
 
+func (s *UserStore) Reserve(ctx context.Context, userID string, delta int64) (bool, error) {
+	const query = `
+		UPDATE users
+		SET used_bytes = used_bytes + $1
+		WHERE user_id = $2 AND used_bytes + $1 <= quota_bytes
+	`
+	tag, err := s.pool.Exec(ctx, query, delta, userID)
+	if err != nil {
+		return false, fmt.Errorf("reserve quota: %w", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+func (s *UserStore) Release(ctx context.Context, userID string, delta int64) error {
+	const query = `UPDATE users SET used_bytes = GREATEST(used_bytes - $1, 0) WHERE user_id = $2`
+	if _, err := s.pool.Exec(ctx, query, delta, userID); err != nil {
+		return fmt.Errorf("release quota: %w", err)
+	}
+	return nil
+}
+
 func (s *UserStore) SetQuota(ctx context.Context, userID string, quotaGiB int) error {
 	const query = `UPDATE users SET quota_gib = $1 WHERE id = $2`
 
