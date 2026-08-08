@@ -205,3 +205,18 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 
 	return row.toSDK(), nil
 }
+
+func (s *UserStore) SetQuota(ctx context.Context, userID string, quotaGiB int) error {
+	const query = `UPDATE users SET quota_gib = $1 WHERE id = $2`
+
+	cmdTag, err := s.pool.Exec(ctx, query, quotaGiB, userID)
+	if err != nil {
+		return fmt.Errorf("updating quota for user %s: %w", userID, err)
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("user %s: %w", userID, ErrNotFound)
+	}
+
+	return nil
+}
