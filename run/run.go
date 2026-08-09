@@ -14,6 +14,7 @@ const (
 	StatusUploaded           Status = "uploaded"
 	StatusStarting           Status = "starting"
 	StatusRunningCoordinator Status = "running_coordinator"
+	StatusRunningWorkers     Status = "running_workers"
 	StatusPaused             Status = "paused"
 	StatusComplete           Status = "complete"
 )
@@ -23,6 +24,7 @@ type Run struct {
 	Name            string
 	UserID          string
 	Status          Status
+	WorkerCount     int
 	WorkspaceFolder string
 	CreatedAt       time.Time
 }
@@ -32,13 +34,19 @@ type runRow struct {
 	Name            string    `db:"name"`
 	UserID          string    `db:"user_id"`
 	Status          string    `db:"status"`
+	WorkerCount     int       `db:"worker_count"`
 	WorkspaceFolder string    `db:"workspace_folder"`
 	CreatedAt       time.Time `db:"created_at"`
 }
 
 func (r runRow) toSDK() Run {
 	return Run{
-		ID: r.ID, Name: r.Name, UserID: r.UserID, Status: Status(r.Status),
-		WorkspaceFolder: r.WorkspaceFolder, CreatedAt: r.CreatedAt,
+		ID:              r.ID,
+		Name:            r.Name,
+		UserID:          r.UserID,
+		Status:          Status(r.Status),
+		WorkerCount:     r.WorkerCount,
+		WorkspaceFolder: r.WorkspaceFolder,
+		CreatedAt:       r.CreatedAt,
 	}
 }
