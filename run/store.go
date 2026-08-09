@@ -155,6 +155,15 @@ func (s *RunStore) CreateRun(ctx context.Context, userID string) (Run, error) {
 	return row.toSDK(), nil
 }
 
+func (s *RunStore) DeleteRun(ctx context.Context, runID, userID string) (bool, error) {
+	const query = `DELETE FROM runs WHERE id = $1 AND user_id = $2`
+	tag, err := s.pool.Exec(ctx, query, runID, userID)
+	if err != nil {
+		return false, fmt.Errorf("delete run %s: %w", runID, err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
 func (s *RunStore) SetWorkspaceFolder(ctx context.Context, runID, folderName string) (bool, error) {
 	const query = `
 		UPDATE runs SET workspace_folder = $1, status = $2
