@@ -9,7 +9,7 @@ import (
 )
 
 func New(prefix string) (string, error) {
-	var buf [22]byte
+	var buf [26]byte
 
 	ms := time.Now().UnixMilli()
 	buf[0] = byte(ms >> 40)

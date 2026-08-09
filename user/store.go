@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -160,9 +161,12 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 		}
 	}
 
+	quotaBytes := int64(quotaGiB) << 30
+	registeredAt := time.Now().UTC()
+
 	const insertQuery = `
-		INSERT INTO users (id, email, email_verified, username, password_hash, roles, quota_gib)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users (id, email, email_verified, username, password_hash, roles, quota_bytes, used_bytes, registered_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id, email, username, roles
 	`
 
@@ -173,7 +177,7 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 			return User{}, fmt.Errorf("register: generate id: %w", err)
 		}
 
-		rows, err := tx.Query(ctx, insertQuery, id, email, false, username, passwordHash, []string{string(role)}, quotaGiB)
+		rows, err := tx.Query(ctx, insertQuery, id, email, false, username, passwordHash, []string{string(role)}, quotaBytes, int64(0), registeredAt)
 		if err == nil {
 			row, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[userRow])
 			if err != nil {
