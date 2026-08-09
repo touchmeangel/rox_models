@@ -10,11 +10,12 @@ var ErrNotFound = errors.New("run not found")
 type Status string
 
 const (
-	StatusPendingUpload Status = "pending_upload"
-	StatusUploaded      Status = "uploaded"
-	StatusStarting      Status = "starting"
-	StatusPaused        Status = "paused"
-	StatusComplete      Status = "complete"
+	StatusPendingUpload      Status = "pending_upload"
+	StatusUploaded           Status = "uploaded"
+	StatusStarting           Status = "starting"
+	StatusRunningCoordinator Status = "running_coordinator"
+	StatusPaused             Status = "paused"
+	StatusComplete           Status = "complete"
 )
 
 type Run struct {
