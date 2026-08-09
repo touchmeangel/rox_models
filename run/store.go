@@ -176,12 +176,12 @@ func (s *RunStore) SetWorkspaceFolder(ctx context.Context, runID, folderName str
 	return tag.RowsAffected() == 1, nil
 }
 
-func (s *RunStore) UpdateStatus(ctx context.Context, runID string, from, to Status) (bool, error) {
+func (s *RunStore) UpdateStatus(ctx context.Context, runID string, to Status) (bool, error) {
 	const query = `
 		UPDATE runs SET status = $1
-		WHERE id = $2 AND status = $3
+		WHERE id = $2
 	`
-	tag, err := s.pool.Exec(ctx, query, string(to), runID, string(from))
+	tag, err := s.pool.Exec(ctx, query, string(to), runID)
 	if err != nil {
 		return false, fmt.Errorf("update status for run %s: %w", runID, err)
 	}
