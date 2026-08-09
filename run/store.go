@@ -25,8 +25,8 @@ func NewRunStore(pool *pgxpool.Pool) *RunStore {
 	return &RunStore{pool: pool}
 }
 
-func (s *RunStore) GetRun(ctx context.Context, runID string) (Run, error) {
-	const query = `SELECT id, user_id, status, workspace_folder FROM users WHERE id = $1`
+func (s *RunStore) GetByID(ctx context.Context, runID string) (Run, error) {
+	const query = `SELECT id, user_id, status, workspace_folder, created_at FROM runs WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, runID)
 	if err != nil {
@@ -36,7 +36,7 @@ func (s *RunStore) GetRun(ctx context.Context, runID string) (Run, error) {
 	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[runRow])
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Run{}, fmt.Errorf("user %s: %w", runID, ErrNotFound)
+			return Run{}, fmt.Errorf("run %s: %w", runID, ErrNotFound)
 		}
 		return Run{}, fmt.Errorf("scanning run %s: %w", runID, err)
 	}
@@ -107,7 +107,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 	return Page{Runs: runs, NextCursor: next}, nil
 }
 
-func (s *RunStore) CreateRun(ctx context.Context, userID, folderName string) (Run, error) {
+func (s *RunStore) CreateRun(ctx context.Context, userID string) (Run, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Run{}, fmt.Errorf("create run: begin tx: %w", err)
@@ -118,7 +118,7 @@ func (s *RunStore) CreateRun(ctx context.Context, userID, folderName string) (Ru
 
 	const insertQuery = `
 		INSERT INTO runs (id, user_id, status, workspace_folder, created_at)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES ($1, $2, $3, '', $4)
 		RETURNING id, user_id, status, workspace_folder, created_at
 	`
 
@@ -129,7 +129,7 @@ func (s *RunStore) CreateRun(ctx context.Context, userID, folderName string) (Ru
 			return Run{}, fmt.Errorf("create run: generate id: %w", err)
 		}
 
-		rows, err := tx.Query(ctx, insertQuery, id, userID, string(StatusStarting), folderName, createdAt)
+		rows, err := tx.Query(ctx, insertQuery, id, userID, string(StatusPendingUpload), createdAt)
 		if err == nil {
 			row, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[runRow])
 			if err != nil {
@@ -153,4 +153,16 @@ func (s *RunStore) CreateRun(ctx context.Context, userID, folderName string) (Ru
 	}
 
 	return row.toSDK(), nil
+}
+
+func (s *RunStore) SetWorkspaceFolder(ctx context.Context, runID, folderName string) (bool, error) {
+	const query = `
+		UPDATE runs SET workspace_folder = $1, status = $2
+		WHERE id = $3 AND workspace_folder = ''
+	`
+	tag, err := s.pool.Exec(ctx, query, folderName, string(StatusUploaded), runID)
+	if err != nil {
+		return false, fmt.Errorf("set workspace folder for run %s: %w", runID, err)
+	}
+	return tag.RowsAffected() == 1, nil
 }
