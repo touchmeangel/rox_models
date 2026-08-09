@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"time"
 )
 
 var ErrNotFound = errors.New("user not found")
@@ -21,16 +22,18 @@ type User struct {
 	Roles         []Role
 	QuotaBytes    int64
 	UsedBytes     int64
+	RegisteredAt  time.Time
 }
 
 type userRow struct {
-	ID            string   `db:"id"`
-	Email         string   `db:"email"`
-	EmailVerified bool     `db:"email_verified"`
-	Username      string   `db:"username"`
-	Roles         []string `db:"roles"`
-	QuotaBytes    int64    `db:"quota_bytes"`
-	UsedBytes     int64    `db:"used_bytes"`
+	ID            string    `db:"id"`
+	Email         string    `db:"email"`
+	EmailVerified bool      `db:"email_verified"`
+	Username      string    `db:"username"`
+	Roles         []string  `db:"roles"`
+	QuotaBytes    int64     `db:"quota_bytes"`
+	UsedBytes     int64     `db:"used_bytes"`
+	RegisteredAt  time.Time `db:"registered_at"`
 }
 
 func (r userRow) toSDK() User {
@@ -46,5 +49,6 @@ func (r userRow) toSDK() User {
 		Roles:         roles,
 		QuotaBytes:    r.QuotaBytes,
 		UsedBytes:     r.UsedBytes,
+		RegisteredAt:  r.RegisteredAt,
 	}
 }
