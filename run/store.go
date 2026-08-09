@@ -218,3 +218,43 @@ func (s *RunStore) UpdateWorkerCount(ctx context.Context, runID string, to int) 
 	}
 	return tag.RowsAffected() == 1, nil
 }
+
+func (s *RunStore) IncrementActiveWorkers(ctx context.Context, runID string) (bool, error) {
+	const query = `
+        UPDATE runs 
+        SET active_worker_count = active_worker_count + 1 
+        WHERE id = $1
+    `
+	tag, err := s.pool.Exec(ctx, query, runID)
+	if err != nil {
+		return false, fmt.Errorf("increment active workers for run %s: %w", runID, err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+func (s *RunStore) DecrementActiveWorkers(ctx context.Context, runID string) (bool, error) {
+	const query = `
+        UPDATE runs 
+        SET active_worker_count = active_worker_count - 1 
+        WHERE id = $1
+    `
+	tag, err := s.pool.Exec(ctx, query, runID)
+	if err != nil {
+		return false, fmt.Errorf("decrement active workers for run %s: %w", runID, err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+func (s *RunStore) RecordWorkerCompletion(ctx context.Context, runID string) (bool, error) {
+	const query = `
+        UPDATE runs 
+        SET active_worker_count = active_worker_count - 1,
+            completed_worker_count = completed_worker_count + 1
+        WHERE id = $1
+    `
+	tag, err := s.pool.Exec(ctx, query, runID)
+	if err != nil {
+		return false, fmt.Errorf("record worker completion for run %s: %w", runID, err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
