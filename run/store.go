@@ -2,8 +2,6 @@ package run
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -51,28 +49,6 @@ type Page struct {
 	NextCursor string
 }
 
-type cursor struct {
-	CreatedAt time.Time `json:"created_at"`
-	ID        string    `json:"id"`
-}
-
-func encodeCursor(c cursor) string {
-	b, _ := json.Marshal(c)
-	return base64.RawURLEncoding.EncodeToString(b)
-}
-
-func decodeCursor(s string) (cursor, error) {
-	var c cursor
-	b, err := base64.RawURLEncoding.DecodeString(s)
-	if err != nil {
-		return cursor{}, fmt.Errorf("invalid cursor: %w", err)
-	}
-	if err := json.Unmarshal(b, &c); err != nil {
-		return cursor{}, fmt.Errorf("invalid cursor: %w", err)
-	}
-	return c, nil
-}
-
 func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, limit int) (Page, error) {
 	var (
 		query string
@@ -88,7 +64,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 		`
 		args = []any{userID, limit + 1} // fetch one extra to know if there's a next page
 	} else {
-		c, err := decodeCursor(cursorStr)
+		c, err := DecodeCursor(cursorStr)
 		if err != nil {
 			return Page{}, err
 		}
@@ -125,7 +101,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 	var next string
 	if hasMore {
 		last := runRows[len(runRows)-1]
-		next = encodeCursor(cursor{CreatedAt: last.CreatedAt, ID: last.ID})
+		next = EncodeCursor(Cursor{CreatedAt: last.CreatedAt, ID: last.ID})
 	}
 
 	return Page{Runs: runs, NextCursor: next}, nil
