@@ -19,6 +19,7 @@ const (
 
 type Run struct {
 	ID              string
+	Name            string
 	UserID          string
 	Status          Status
 	WorkspaceFolder string
@@ -27,6 +28,7 @@ type Run struct {
 
 type runRow struct {
 	ID              string    `db:"id"`
+	Name            string    `db:"name"`
 	UserID          string    `db:"user_id"`
 	Status          string    `db:"status"`
 	WorkspaceFolder string    `db:"workspace_folder"`
@@ -35,7 +37,7 @@ type runRow struct {
 
 func (r runRow) toSDK() Run {
 	return Run{
-		ID: r.ID, UserID: r.UserID, Status: Status(r.Status),
+		ID: r.ID, Name: r.Name, UserID: r.UserID, Status: Status(r.Status),
 		WorkspaceFolder: r.WorkspaceFolder, CreatedAt: r.CreatedAt,
 	}
 }

@@ -26,7 +26,7 @@ func NewRunStore(pool *pgxpool.Pool) *RunStore {
 }
 
 func (s *RunStore) GetByID(ctx context.Context, runID string) (Run, error) {
-	const query = `SELECT id, user_id, status, workspace_folder, created_at FROM runs WHERE id = $1`
+	const query = `SELECT id, name, user_id, status, workspace_folder, created_at FROM runs WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, runID)
 	if err != nil {
@@ -44,6 +44,25 @@ func (s *RunStore) GetByID(ctx context.Context, runID string) (Run, error) {
 	return row.toSDK(), nil
 }
 
+func (s *RunStore) GetByName(ctx context.Context, userID string, name string) (Run, error) {
+	const query = `SELECT id, name, user_id, status, workspace_folder, created_at FROM runs WHERE user_id = $1 AND name = $2`
+
+	rows, err := s.pool.Query(ctx, query, userID, name)
+	if err != nil {
+		return Run{}, fmt.Errorf("querying run %s: %w", name, err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[runRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Run{}, fmt.Errorf("run %s: %w", name, ErrNotFound)
+		}
+		return Run{}, fmt.Errorf("scanning run %s: %w", name, err)
+	}
+
+	return row.toSDK(), nil
+}
+
 type Page struct {
 	Runs       []Run
 	NextCursor string
@@ -56,7 +75,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 	)
 	if cursorStr == "" {
 		query = `
-			SELECT id, user_id, status, workspace_folder, created_at
+			SELECT id, name, user_id, status, workspace_folder, created_at
 			FROM runs
 			WHERE user_id = $1
 			ORDER BY created_at DESC, id DESC
@@ -69,7 +88,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 			return Page{}, err
 		}
 		query = `
-			SELECT id, user_id, status, workspace_folder, created_at
+			SELECT id, name, user_id, status, workspace_folder, created_at
 			FROM runs
 			WHERE user_id = $1 AND (created_at, id) < ($2, $3)
 			ORDER BY created_at DESC, id DESC
@@ -107,7 +126,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 	return Page{Runs: runs, NextCursor: next}, nil
 }
 
-func (s *RunStore) CreateRun(ctx context.Context, userID string) (Run, error) {
+func (s *RunStore) CreateRun(ctx context.Context, name string, userID string) (Run, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return Run{}, fmt.Errorf("create run: begin tx: %w", err)
@@ -117,9 +136,9 @@ func (s *RunStore) CreateRun(ctx context.Context, userID string) (Run, error) {
 	createdAt := time.Now().UTC()
 
 	const insertQuery = `
-		INSERT INTO runs (id, user_id, status, workspace_folder, created_at)
-		VALUES ($1, $2, $3, '', $4)
-		RETURNING id, user_id, status, workspace_folder, created_at
+		INSERT INTO runs (id, name, user_id, status, workspace_folder, created_at)
+		VALUES ($1, $2, $3, $4, '', $5)
+		RETURNING id, name, user_id, status, workspace_folder, created_at
 	`
 
 	var row runRow
@@ -129,7 +148,7 @@ func (s *RunStore) CreateRun(ctx context.Context, userID string) (Run, error) {
 			return Run{}, fmt.Errorf("create run: generate id: %w", err)
 		}
 
-		rows, err := tx.Query(ctx, insertQuery, id, userID, string(StatusPendingUpload), createdAt)
+		rows, err := tx.Query(ctx, insertQuery, id, name, userID, string(StatusPendingUpload), createdAt)
 		if err == nil {
 			row, err = pgx.CollectOneRow(rows, pgx.RowToStructByName[runRow])
 			if err != nil {
