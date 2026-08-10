@@ -20,15 +20,12 @@ const (
 )
 
 type Run struct {
-	ID                   string
-	Name                 string
-	UserID               string
-	Status               Status
-	WorkerCount          int
-	CompletedWorkerCount int
-	ActiveWorkerCount    int
-	WorkspaceFolder      string
-	CreatedAt            time.Time
+	ID            string
+	Name          string
+	UserID        string
+	Status        Status
+	WorkspaceName string
+	CreatedAt     time.Time
 }
 
 type runRow struct {
@@ -39,20 +36,17 @@ type runRow struct {
 	WorkerCount          int       `db:"worker_count"`
 	CompletedWorkerCount int       `db:"completed_worker_count"`
 	ActiveWorkerCount    int       `db:"active_worker_count"`
-	WorkspaceFolder      string    `db:"workspace_folder"`
+	WorkspaceName        string    `db:"workspace_name"`
 	CreatedAt            time.Time `db:"created_at"`
 }
 
 func (r runRow) toSDK() Run {
 	return Run{
-		ID:                   r.ID,
-		Name:                 r.Name,
-		UserID:               r.UserID,
-		Status:               Status(r.Status),
-		WorkerCount:          r.WorkerCount,
-		CompletedWorkerCount: r.CompletedWorkerCount,
-		ActiveWorkerCount:    r.ActiveWorkerCount,
-		WorkspaceFolder:      r.WorkspaceFolder,
-		CreatedAt:            r.CreatedAt,
+		ID:            r.ID,
+		Name:          r.Name,
+		UserID:        r.UserID,
+		Status:        Status(r.Status),
+		WorkspaceName: r.WorkspaceName,
+		CreatedAt:     r.CreatedAt,
 	}
 }

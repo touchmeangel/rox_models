@@ -26,7 +26,7 @@ func NewRunStore(pool *pgxpool.Pool) *RunStore {
 }
 
 func (s *RunStore) GetByID(ctx context.Context, runID string) (Run, error) {
-	const query = `SELECT id, name, user_id, status, workspace_folder, worker_count, created_at FROM runs WHERE id = $1`
+	const query = `SELECT id, name, user_id, status, workspace_name, created_at FROM runs WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, runID)
 	if err != nil {
@@ -45,7 +45,7 @@ func (s *RunStore) GetByID(ctx context.Context, runID string) (Run, error) {
 }
 
 func (s *RunStore) GetByName(ctx context.Context, userID string, name string) (Run, error) {
-	const query = `SELECT id, name, user_id, status, workspace_folder, worker_count, created_at FROM runs WHERE user_id = $1 AND name = $2`
+	const query = `SELECT id, name, user_id, status, workspace_name, created_at FROM runs WHERE user_id = $1 AND name = $2`
 
 	rows, err := s.pool.Query(ctx, query, userID, name)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 	)
 	if cursorStr == "" {
 		query = `
-			SELECT id, name, user_id, status, workspace_folder, worker_count, created_at
+			SELECT id, name, user_id, status, workspace_name, created_at
 			FROM runs
 			WHERE user_id = $1
 			ORDER BY created_at DESC, id DESC
@@ -88,7 +88,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 			return Page{}, err
 		}
 		query = `
-			SELECT id, name, user_id, status, workspace_folder, worker_count, created_at
+			SELECT id, name, user_id, status, workspace_name, created_at
 			FROM runs
 			WHERE user_id = $1 AND (created_at, id) < ($2, $3)
 			ORDER BY created_at DESC, id DESC
@@ -136,9 +136,9 @@ func (s *RunStore) CreateRun(ctx context.Context, name string, userID string) (R
 	createdAt := time.Now().UTC()
 
 	const insertQuery = `
-		INSERT INTO runs (id, name, user_id, status, workspace_folder, worker_count, created_at)
+		INSERT INTO runs (id, name, user_id, status, workspace_name, created_at)
 		VALUES ($1, $2, $3, $4, '', 0, $5)
-		RETURNING id, name, user_id, status, workspace_folder, created_at
+		RETURNING id, name, user_id, status, workspace_name, created_at
 	`
 
 	var row runRow
@@ -203,58 +203,6 @@ func (s *RunStore) UpdateStatus(ctx context.Context, runID string, to Status) (b
 	tag, err := s.pool.Exec(ctx, query, string(to), runID)
 	if err != nil {
 		return false, fmt.Errorf("update status for run %s: %w", runID, err)
-	}
-	return tag.RowsAffected() == 1, nil
-}
-
-func (s *RunStore) UpdateWorkerCount(ctx context.Context, runID string, to int) (bool, error) {
-	const query = `
-		UPDATE runs SET worker_count = $1
-		WHERE id = $2
-	`
-	tag, err := s.pool.Exec(ctx, query, to, runID)
-	if err != nil {
-		return false, fmt.Errorf("update worker count for run %s: %w", runID, err)
-	}
-	return tag.RowsAffected() == 1, nil
-}
-
-func (s *RunStore) IncrementActiveWorkers(ctx context.Context, runID string) (bool, error) {
-	const query = `
-        UPDATE runs 
-        SET active_worker_count = active_worker_count + 1 
-        WHERE id = $1
-    `
-	tag, err := s.pool.Exec(ctx, query, runID)
-	if err != nil {
-		return false, fmt.Errorf("increment active workers for run %s: %w", runID, err)
-	}
-	return tag.RowsAffected() == 1, nil
-}
-
-func (s *RunStore) DecrementActiveWorkers(ctx context.Context, runID string) (bool, error) {
-	const query = `
-        UPDATE runs 
-        SET active_worker_count = active_worker_count - 1 
-        WHERE id = $1
-    `
-	tag, err := s.pool.Exec(ctx, query, runID)
-	if err != nil {
-		return false, fmt.Errorf("decrement active workers for run %s: %w", runID, err)
-	}
-	return tag.RowsAffected() == 1, nil
-}
-
-func (s *RunStore) RecordWorkerCompletion(ctx context.Context, runID string) (bool, error) {
-	const query = `
-        UPDATE runs 
-        SET active_worker_count = active_worker_count - 1,
-            completed_worker_count = completed_worker_count + 1
-        WHERE id = $1
-    `
-	tag, err := s.pool.Exec(ctx, query, runID)
-	if err != nil {
-		return false, fmt.Errorf("record worker completion for run %s: %w", runID, err)
 	}
 	return tag.RowsAffected() == 1, nil
 }
