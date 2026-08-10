@@ -207,19 +207,6 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	return row.toSDK(), nil
 }
 
-func (s *UserStore) GetOpenRegistration(ctx context.Context) (bool, error) {
-	var openSignup bool
-	err := s.pool.QueryRow(ctx, `SELECT open_signup_enabled FROM system_settings`).Scan(&openSignup)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, fmt.Errorf("get registration status: system_settings row missing — check migrations ran")
-		}
-		return false, fmt.Errorf("get registration status: %w", err)
-	}
-
-	return openSignup, nil
-}
-
 func (s *UserStore) OpenRegistration(ctx context.Context) (bool, error) {
 	tag, err := s.pool.Exec(ctx, `UPDATE system_settings SET open_signup_enabled = true`)
 	if err != nil {
