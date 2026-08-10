@@ -12,10 +12,7 @@ import (
 	"github.com/touchmeangel/rox_models_go/idgen"
 )
 
-const (
-	maxIDAttempts     = 3
-	pgUniqueViolation = "23505"
-)
+var ErrNotFound = errors.New("run not found")
 
 type RunStore struct {
 	pool *pgxpool.Pool
@@ -158,8 +155,8 @@ func (s *RunStore) CreateRun(ctx context.Context, name string, userID string) (R
 		}
 
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation && pgErr.ConstraintName == "runs_pkey" {
-			if attempt < maxIDAttempts {
+		if errors.As(err, &pgErr) && pgErr.Code == idgen.PGUniqueViolation && pgErr.ConstraintName == "runs_pkey" {
+			if attempt < idgen.MaxIDAttempts {
 				continue
 			}
 			return Run{}, fmt.Errorf("create run: id generator collided %d times in a row (check entropy source): %w", attempt, err)

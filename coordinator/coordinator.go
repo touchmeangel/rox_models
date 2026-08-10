@@ -1,13 +1,12 @@
-package worker
+package coordinator
 
 import (
 	"time"
 )
 
-type Worker struct {
+type Coordinator struct {
 	ID        string
 	RunID     string
-	MissionID string
 	Active    bool
 	Completed bool
 	Error     string
@@ -15,10 +14,9 @@ type Worker struct {
 	CreatedAt time.Time
 }
 
-type workerRaw struct {
+type coordinatorRaw struct {
 	ID        string    `db:"id"`
 	RunID     string    `db:"run_id"`
-	MissionID string    `db:"mission_id"`
 	Active    bool      `db:"active"`
 	Completed bool      `db:"completed"`
 	Error     string    `db:"error"`
@@ -26,11 +24,10 @@ type workerRaw struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
-func (w workerRaw) toSDK() Worker {
-	return Worker{
+func (w coordinatorRaw) toSDK() Coordinator {
+	return Coordinator{
 		ID:        w.ID,
 		RunID:     w.RunID,
-		MissionID: w.MissionID,
 		Active:    w.Active,
 		Completed: w.Completed,
 		Error:     w.Error,

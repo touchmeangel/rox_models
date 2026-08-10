@@ -14,10 +14,7 @@ import (
 	"github.com/touchmeangel/rox_models_go/signup"
 )
 
-const (
-	maxIDAttempts     = 3
-	pgUniqueViolation = "23505"
-)
+var ErrNotFound = errors.New("user not found")
 
 type UserStore struct {
 	pool *pgxpool.Pool
@@ -187,14 +184,14 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 		}
 
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation {
+		if errors.As(err, &pgErr) && pgErr.Code == idgen.PGUniqueViolation {
 			switch pgErr.ConstraintName {
 			case "users_email_key":
 				return User{}, ErrEmailTaken
 			case "users_username_key":
 				return User{}, ErrUsernameTaken
 			case "users_pkey":
-				if attempt < maxIDAttempts {
+				if attempt < idgen.MaxIDAttempts {
 					continue
 				}
 				return User{}, fmt.Errorf("register: id generator collided %d times in a row (check entropy source): %w", attempt, err)

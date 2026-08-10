@@ -1,11 +1,8 @@
 package user
 
 import (
-	"errors"
 	"time"
 )
-
-var ErrNotFound = errors.New("user not found")
 
 type Role string
 

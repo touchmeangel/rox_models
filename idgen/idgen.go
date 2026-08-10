@@ -8,6 +8,11 @@ import (
 	"github.com/btcsuite/btcutil/base58"
 )
 
+const (
+	MaxIDAttempts     = 3
+	PGUniqueViolation = "23505"
+)
+
 func New(prefix string) (string, error) {
 	var buf [26]byte
 

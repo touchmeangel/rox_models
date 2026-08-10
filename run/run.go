@@ -1,11 +1,8 @@
 package run
 
 import (
-	"errors"
 	"time"
 )
-
-var ErrNotFound = errors.New("run not found")
 
 type Status string
 
