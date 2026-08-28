@@ -62,15 +62,15 @@ func (s *RunStore) GetByName(ctx context.Context, userID string, name string) (R
 
 type Page struct {
 	Runs       []Run
-	NextCursor string
+	NextCursor *Cursor
 }
 
-func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, limit int) (Page, error) {
+func (s *RunStore) ListByUser(ctx context.Context, userID, cursor *Cursor, limit int) (Page, error) {
 	var (
 		query string
 		args  []any
 	)
-	if cursorStr == "" {
+	if cursor == nil {
 		query = `
 			SELECT id, name, user_id, status, workspace_name, created_at
 			FROM runs
@@ -80,10 +80,6 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 		`
 		args = []any{userID, limit + 1} // fetch one extra to know if there's a next page
 	} else {
-		c, err := DecodeCursor(cursorStr)
-		if err != nil {
-			return Page{}, err
-		}
 		query = `
 			SELECT id, name, user_id, status, workspace_name, created_at
 			FROM runs
@@ -91,7 +87,7 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 			ORDER BY created_at DESC, id DESC
 			LIMIT $4
 		`
-		args = []any{userID, c.CreatedAt, c.ID, limit + 1}
+		args = []any{userID, cursor.CreatedAt, cursor.ID, limit + 1}
 	}
 
 	rows, err := s.pool.Query(ctx, query, args...)
@@ -114,10 +110,10 @@ func (s *RunStore) ListByUser(ctx context.Context, userID, cursorStr string, lim
 		runs[i] = r.toSDK()
 	}
 
-	var next string
+	var next *Cursor
 	if hasMore {
 		last := runRows[len(runRows)-1]
-		next = EncodeCursor(Cursor{CreatedAt: last.CreatedAt, ID: last.ID})
+		next = &Cursor{CreatedAt: last.CreatedAt, ID: last.ID}
 	}
 
 	return Page{Runs: runs, NextCursor: next}, nil
