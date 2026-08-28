@@ -178,8 +178,8 @@ func (s *RunStore) DeleteRun(ctx context.Context, runID, userID string) (bool, e
 
 func (s *RunStore) SetWorkspaceFolder(ctx context.Context, runID, folderName string) (bool, error) {
 	const query = `
-		UPDATE runs SET workspace_folder = $1, status = $2
-		WHERE id = $3 AND workspace_folder = ''
+		UPDATE runs SET workspace_name = $1, status = $2
+		WHERE id = $3 AND workspace_name = ''
 	`
 	tag, err := s.pool.Exec(ctx, query, folderName, string(StatusUploaded), runID)
 	if err != nil {
