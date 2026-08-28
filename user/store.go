@@ -253,9 +253,10 @@ func (s *UserStore) Release(ctx context.Context, userID string, delta int64) err
 }
 
 func (s *UserStore) SetQuota(ctx context.Context, userID string, quotaGiB int) error {
-	const query = `UPDATE users SET quota_gib = $1 WHERE id = $2`
+	const query = `UPDATE users SET quota_bytes = $1 WHERE id = $2`
 
-	cmdTag, err := s.pool.Exec(ctx, query, quotaGiB, userID)
+	quotaBytes := int64(quotaGiB) << 30
+	cmdTag, err := s.pool.Exec(ctx, query, quotaBytes, userID)
 	if err != nil {
 		return fmt.Errorf("updating quota for user %s: %w", userID, err)
 	}
