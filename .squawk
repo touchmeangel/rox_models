@@ -1,1 +1,5 @@
+assume_in_transaction = true
+
+excluded_paths = ["*.down.sql"]
+
 excluded_rules = []

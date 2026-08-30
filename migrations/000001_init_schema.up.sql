@@ -1,3 +1,6 @@
+SET LOCAL lock_timeout = '1s';
+SET LOCAL statement_timeout = '5s';
+
 CREATE TABLE IF NOT EXISTS users (
     id            text        PRIMARY KEY,
     email         text        NOT NULL,
@@ -16,9 +19,9 @@ CREATE TABLE IF NOT EXISTS runs (
     user_id                text        NOT NULL REFERENCES users(id),
     status                 text        NOT NULL,
     workspace_name         text        NOT NULL DEFAULT '',
-    worker_count           integer     NOT NULL DEFAULT 0,
-    completed_worker_count integer     NOT NULL DEFAULT 0,
-    active_worker_count    integer     NOT NULL DEFAULT 0,
+    worker_count           bigint      NOT NULL DEFAULT 0,
+    completed_worker_count bigint      NOT NULL DEFAULT 0,
+    active_worker_count    bigint      NOT NULL DEFAULT 0,
     created_at             timestamptz NOT NULL DEFAULT now()
 );
 
