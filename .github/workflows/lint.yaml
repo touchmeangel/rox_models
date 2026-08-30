@@ -1,8 +1,9 @@
-name: Go CI
+name: Go Lint
 
 on:
+  workflow_dispatch: {}
   push:
-    branches: [main]
+    tags: ["v*"]
   pull_request:
 
 permissions:
