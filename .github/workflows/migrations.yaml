@@ -4,6 +4,7 @@ on:
     paths:
       - "migrations/**"
   push:
+    branches: ["main"]
     tags: ["v*"]
   workflow_dispatch: {}
 
