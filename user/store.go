@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/touchmeangel/rox_models_go/idgen"
-	"github.com/touchmeangel/rox_models_go/signup"
+	"github.com/touchmeangel/rox_models/idgen"
+	"github.com/touchmeangel/rox_models/signup"
 )
 
 var ErrNotFound = errors.New("user not found")

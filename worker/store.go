@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/touchmeangel/rox_models_go/idgen"
+	"github.com/touchmeangel/rox_models/idgen"
 )
 
 var ErrNotFound = errors.New("run not found")
