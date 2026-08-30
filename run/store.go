@@ -124,7 +124,7 @@ func (s *RunStore) CreateRun(ctx context.Context, name string, userID string) (R
 	if err != nil {
 		return Run{}, fmt.Errorf("create run: begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	createdAt := time.Now().UTC()
 

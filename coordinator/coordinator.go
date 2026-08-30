@@ -25,13 +25,5 @@ type coordinatorRaw struct {
 }
 
 func (w coordinatorRaw) toSDK() Coordinator {
-	return Coordinator{
-		ID:        w.ID,
-		RunID:     w.RunID,
-		Active:    w.Active,
-		Completed: w.Completed,
-		Error:     w.Error,
-		Retriable: w.Retriable,
-		CreatedAt: w.CreatedAt,
-	}
+	return Coordinator(w)
 }

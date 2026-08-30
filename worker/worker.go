@@ -27,14 +27,5 @@ type workerRaw struct {
 }
 
 func (w workerRaw) toSDK() Worker {
-	return Worker{
-		ID:        w.ID,
-		RunID:     w.RunID,
-		MissionID: w.MissionID,
-		Active:    w.Active,
-		Completed: w.Completed,
-		Error:     w.Error,
-		Retriable: w.Retriable,
-		CreatedAt: w.CreatedAt,
-	}
+	return Worker(w)
 }

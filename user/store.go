@@ -133,7 +133,7 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	if err != nil {
 		return User{}, fmt.Errorf("register: begin tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	tag, err := tx.Exec(ctx, `UPDATE system_settings SET admin_claimed = true WHERE admin_claimed = false`)
 	if err != nil {
