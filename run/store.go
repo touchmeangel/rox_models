@@ -65,7 +65,7 @@ type Page struct {
 	NextCursor *Cursor
 }
 
-func (s *RunStore) ListByUser(ctx context.Context, userID, cursor *Cursor, limit int) (Page, error) {
+func (s *RunStore) ListByUser(ctx context.Context, userID string, cursor *Cursor, limit int) (Page, error) {
 	var (
 		query string
 		args  []any
