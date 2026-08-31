@@ -100,6 +100,25 @@ func (s *UserStore) GetCredentialsByEmail(ctx context.Context, email string) (Cr
 	return row.toSDK(), nil
 }
 
+func (s *UserStore) GetCredentialsByID(ctx context.Context, userID string) (Credentials, error) {
+	const query = `SELECT id, email, username, roles, password_hash FROM users WHERE id = $1`
+
+	rows, err := s.pool.Query(ctx, query, userID)
+	if err != nil {
+		return Credentials{}, fmt.Errorf("querying credentials by id %s: %w", userID, err)
+	}
+
+	row, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[credentialsRow])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Credentials{}, fmt.Errorf("user %s: %w", userID, ErrNotFound)
+		}
+		return Credentials{}, fmt.Errorf("scanning credentials %s: %w", userID, err)
+	}
+
+	return row.toSDK(), nil
+}
+
 func (s *UserStore) SignupStatus(ctx context.Context) (signup.SignupMode, error) {
 	const query = `SELECT admin_claimed, open_signup_enabled FROM system_settings`
 
