@@ -207,28 +207,16 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	return row.toSDK(), nil
 }
 
-func (s *UserStore) OpenRegistration(ctx context.Context) (bool, error) {
-	tag, err := s.pool.Exec(ctx, `UPDATE system_settings SET open_signup_enabled = true`)
+func (s *UserStore) SetRegistrationEnabled(ctx context.Context, open bool) error {
+	tag, err := s.pool.Exec(ctx, `UPDATE system_settings SET open_signup_enabled = $1`, open)
 	if err != nil {
-		return false, fmt.Errorf("open registration: %w", err)
+		return fmt.Errorf("open registration: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return false, fmt.Errorf("open registration: system_settings row missing")
+		return fmt.Errorf("open registration: system_settings row missing")
 	}
 
-	return true, nil
-}
-
-func (s *UserStore) CloseRegistration(ctx context.Context) (bool, error) {
-	tag, err := s.pool.Exec(ctx, `UPDATE system_settings SET open_signup_enabled = false`)
-	if err != nil {
-		return false, fmt.Errorf("close registration: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return false, fmt.Errorf("close registration: system_settings row missing")
-	}
-
-	return false, nil
+	return nil
 }
 
 func (s *UserStore) Reserve(ctx context.Context, userID string, delta int64) (bool, error) {
