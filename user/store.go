@@ -259,6 +259,21 @@ func (s *UserStore) Release(ctx context.Context, userID string, delta int64) err
 	return nil
 }
 
+func (s *UserStore) UpdatePasswordHash(ctx context.Context, userID string, passwordHash string) error {
+	const query = `UPDATE users SET password_hash = $1 WHERE id = $2`
+
+	cmdTag, err := s.pool.Exec(ctx, query, passwordHash, userID)
+	if err != nil {
+		return fmt.Errorf("updating password for user %s: %w", userID, err)
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return fmt.Errorf("user %s: %w", userID, ErrNotFound)
+	}
+
+	return nil
+}
+
 func (s *UserStore) SetQuota(ctx context.Context, userID string, quotaGiB int) error {
 	const query = `UPDATE users SET quota_bytes = $1 WHERE id = $2`
 
