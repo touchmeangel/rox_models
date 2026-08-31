@@ -26,15 +26,12 @@ type Run struct {
 }
 
 type runRow struct {
-	ID                   string    `db:"id"`
-	Name                 string    `db:"name"`
-	UserID               string    `db:"user_id"`
-	Status               string    `db:"status"`
-	WorkerCount          int       `db:"worker_count"`
-	CompletedWorkerCount int       `db:"completed_worker_count"`
-	ActiveWorkerCount    int       `db:"active_worker_count"`
-	WorkspaceName        string    `db:"workspace_name"`
-	CreatedAt            time.Time `db:"created_at"`
+	ID            string    `db:"id"`
+	Name          string    `db:"name"`
+	UserID        string    `db:"user_id"`
+	Status        string    `db:"status"`
+	WorkspaceName string    `db:"workspace_name"`
+	CreatedAt     time.Time `db:"created_at"`
 }
 
 func (r runRow) toSDK() Run {

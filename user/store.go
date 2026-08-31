@@ -25,7 +25,7 @@ func NewUserStore(pool *pgxpool.Pool) *UserStore {
 }
 
 func (s *UserStore) GetProfile(ctx context.Context, userID string) (User, error) {
-	const query = `SELECT id, email, username, roles FROM users WHERE id = $1`
+	const query = `SELECT id, email, email_verified, username, roles, quota_bytes, used_bytes, registered_at FROM users WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, userID)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *UserStore) GetProfile(ctx context.Context, userID string) (User, error)
 }
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (User, error) {
-	const query = `SELECT id, email, username, roles FROM users WHERE email = $1`
+	const query = `SELECT id, email, email_verified, username, roles, quota_bytes, used_bytes, registered_at FROM users WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, email)
 	if err != nil {
@@ -63,7 +63,7 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (User, error) 
 }
 
 func (s *UserStore) GetByUsername(ctx context.Context, username string) (User, error) {
-	const query = `SELECT id, email, username, roles FROM users WHERE username = $1`
+	const query = `SELECT id, email, email_verified, username, roles, quota_bytes, used_bytes, registered_at FROM users WHERE id = $1`
 
 	rows, err := s.pool.Query(ctx, query, username)
 	if err != nil {
@@ -164,7 +164,7 @@ func (s *UserStore) Register(ctx context.Context, email, username, passwordHash 
 	const insertQuery = `
 		INSERT INTO users (id, email, email_verified, username, password_hash, roles, quota_bytes, used_bytes, registered_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, email, username, roles
+		RETURNING id, email, email_verified, username, roles, quota_bytes, used_bytes, registered_at
 	`
 
 	var row userRow
@@ -235,7 +235,7 @@ func (s *UserStore) Reserve(ctx context.Context, userID string, delta int64) (bo
 	const query = `
 		UPDATE users
 		SET used_bytes = used_bytes + $1
-		WHERE user_id = $2 AND used_bytes + $1 <= quota_bytes
+		WHERE id = $2 AND used_bytes + $1 <= quota_bytes
 	`
 	tag, err := s.pool.Exec(ctx, query, delta, userID)
 	if err != nil {

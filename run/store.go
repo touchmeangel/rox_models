@@ -130,7 +130,7 @@ func (s *RunStore) CreateRun(ctx context.Context, name string, userID string) (R
 
 	const insertQuery = `
 		INSERT INTO runs (id, name, user_id, status, workspace_name, created_at)
-		VALUES ($1, $2, $3, $4, '', 0, $5)
+		VALUES ($1, $2, $3, $4, '', $5)
 		RETURNING id, name, user_id, status, workspace_name, created_at
 	`
 
