@@ -89,23 +89,3 @@ func (s *SessionStore) Delete(ctx context.Context, runID string) error {
 	}
 	return nil
 }
-
-type StaleSession struct {
-	RunID    string `db:"run_id"`
-	UserID   string `db:"user_id"`
-	UploadID string `db:"upload_id"`
-	Offset   int64  `db:"offset_bytes"`
-}
-
-func (s *SessionStore) Stale(ctx context.Context, olderThanMinutes int) ([]StaleSession, error) {
-	const query = `
-		SELECT run_id, user_id, upload_id, offset_bytes
-		FROM upload_sessions
-		WHERE last_active_at < now() - ($1 || ' minutes')::interval
-	`
-	rows, err := s.pool.Query(ctx, query, olderThanMinutes)
-	if err != nil {
-		return nil, fmt.Errorf("querying stale upload sessions: %w", err)
-	}
-	return pgx.CollectRows(rows, pgx.RowToStructByName[StaleSession])
-}
