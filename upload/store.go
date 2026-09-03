@@ -18,9 +18,9 @@ func NewSessionStore(pool *pgxpool.Pool) *SessionStore {
 	return &SessionStore{pool: pool}
 }
 
-func (s *SessionStore) Create(ctx context.Context, userID, runID, uploadID string) error {
-	const query = `INSERT INTO upload_sessions (run_id, user_id, upload_id) VALUES ($1, $2, $3)`
-	if _, err := s.pool.Exec(ctx, query, runID, userID, uploadID); err != nil {
+func (s *SessionStore) Create(ctx context.Context, userID, runID, uploadID string, reserveAmount uint64) error {
+	const query = `INSERT INTO upload_sessions (run_id, user_id, upload_id, reserve_amount) VALUES ($1, $2, $3, $4)`
+	if _, err := s.pool.Exec(ctx, query, runID, userID, uploadID, reserveAmount); err != nil {
 		return fmt.Errorf("create upload session %s: %w", runID, err)
 	}
 	return nil
@@ -28,7 +28,7 @@ func (s *SessionStore) Create(ctx context.Context, userID, runID, uploadID strin
 
 func (s *SessionStore) Get(ctx context.Context, runID string) (Session, error) {
 	const query = `
-		SELECT run_id, user_id, upload_id, offset_bytes, completed_parts
+		SELECT run_id, user_id, upload_id, offset_bytes, completed_parts, reserve_amount
 		FROM upload_sessions
 		WHERE run_id = $1
 	`
