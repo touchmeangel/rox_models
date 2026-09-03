@@ -83,9 +83,15 @@ func (s *SessionStore) AppendPart(ctx context.Context, runID, userID string, exp
 	return newOffset, nil
 }
 
-func (s *SessionStore) Delete(ctx context.Context, runID string) error {
-	if _, err := s.pool.Exec(ctx, `DELETE FROM upload_sessions WHERE run_id = $1`, runID); err != nil {
-		return fmt.Errorf("delete upload session %s: %w", runID, err)
+func (s *SessionStore) Delete(ctx context.Context, runID string) (uint64, error) {
+	const query = ` DELETE FROM upload_sessions WHERE run_id = $1 RETURNING reserve_amount `
+	var reserveAmount uint64
+	err := s.pool.QueryRow(ctx, query, runID).Scan(&reserveAmount)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, fmt.Errorf("upload session %s: %w", runID, ErrNotFound)
 	}
-	return nil
+	if err != nil {
+		return 0, fmt.Errorf("delete upload session %s: %w", runID, err)
+	}
+	return reserveAmount, nil
 }
