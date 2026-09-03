@@ -28,7 +28,7 @@ func (s *SessionStore) Create(ctx context.Context, userID, runID, uploadID strin
 
 func (s *SessionStore) Get(ctx context.Context, runID string) (Session, error) {
 	const query = `
-		SELECT run_id, user_id, upload_id, offset_bytes, completed_parts, reserve_amount
+		SELECT run_id, user_id, upload_id, offset_bytes, completed_parts, reserve_amount, last_active_at
 		FROM upload_sessions
 		WHERE run_id = $1
 	`
