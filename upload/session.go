@@ -21,7 +21,7 @@ type Session struct {
 	RunID          string
 	UserID         string
 	UploadID       string
-	Offset         int64
+	Offset         uint64
 	CompletedParts []CompletedPart
 	ReserveAmount  uint64
 	LastActiveAt   time.Time
@@ -31,7 +31,7 @@ type sessionRaw struct {
 	RunID          string    `db:"run_id"`
 	UserID         string    `db:"user_id"`
 	UploadID       string    `db:"upload_id"`
-	Offset         int64     `db:"offset_bytes"`
+	Offset         uint64    `db:"offset_bytes"`
 	CompletedParts []byte    `db:"completed_parts"`
 	ReserveAmount  uint64    `db:"reserve_amount"`
 	LastActiveAt   time.Time `db:"last_active_at"`

@@ -55,7 +55,7 @@ func (s *SessionStore) Get(ctx context.Context, runID string) (Session, error) {
 	return session, nil
 }
 
-func (s *SessionStore) AppendPart(ctx context.Context, runID, userID string, expectedOffset int64, part CompletedPart, chunkLen int64) (newOffset int64, err error) {
+func (s *SessionStore) AppendPart(ctx context.Context, runID, userID string, expectedOffset uint64, part CompletedPart, chunkLen uint64) (newOffset uint64, err error) {
 	partJSON, err := json.Marshal(part)
 	if err != nil {
 		return 0, fmt.Errorf("encode part: %w", err)
