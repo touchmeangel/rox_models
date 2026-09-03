@@ -13,7 +13,7 @@ var (
 )
 
 type CompletedPart struct {
-	PartNumber int32  `json:"part_number"`
+	PartNumber uint32 `json:"part_number"`
 	ETag       string `json:"etag"`
 }
 
