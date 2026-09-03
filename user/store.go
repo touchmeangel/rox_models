@@ -238,7 +238,7 @@ func (s *UserStore) SetRegistrationEnabled(ctx context.Context, open bool) error
 	return nil
 }
 
-func (s *UserStore) Reserve(ctx context.Context, userID string, delta int64) (bool, error) {
+func (s *UserStore) Reserve(ctx context.Context, userID string, delta uint64) (bool, error) {
 	const query = `
 		UPDATE users
 		SET used_bytes = used_bytes + $1
@@ -251,8 +251,8 @@ func (s *UserStore) Reserve(ctx context.Context, userID string, delta int64) (bo
 	return tag.RowsAffected() == 1, nil
 }
 
-func (s *UserStore) Release(ctx context.Context, userID string, delta int64) error {
-	const query = `UPDATE users SET used_bytes = GREATEST(used_bytes - $1, 0) WHERE user_id = $2`
+func (s *UserStore) Release(ctx context.Context, userID string, delta uint64) error {
+	const query = `UPDATE users SET used_bytes = GREATEST(used_bytes - $1, 0) WHERE id = $2`
 	if _, err := s.pool.Exec(ctx, query, delta, userID); err != nil {
 		return fmt.Errorf("release quota: %w", err)
 	}

@@ -17,8 +17,8 @@ type User struct {
 	EmailVerified bool
 	Username      string
 	Roles         []Role
-	QuotaBytes    int64
-	UsedBytes     int64
+	QuotaBytes    uint64
+	UsedBytes     uint64
 	RegisteredAt  time.Time
 }
 
@@ -28,8 +28,8 @@ type userRow struct {
 	EmailVerified bool      `db:"email_verified"`
 	Username      string    `db:"username"`
 	Roles         []string  `db:"roles"`
-	QuotaBytes    int64     `db:"quota_bytes"`
-	UsedBytes     int64     `db:"used_bytes"`
+	QuotaBytes    uint64    `db:"quota_bytes"`
+	UsedBytes     uint64    `db:"used_bytes"`
 	RegisteredAt  time.Time `db:"registered_at"`
 }
 
